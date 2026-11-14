@@ -58,3 +58,6 @@ simulator/
     migrations/        0001_initial, 0002_person_rank
 templates/simulator/   base, unit_form, unit_list, unit_detail, people
 ```
+
+
+Informatiile pot fi gasite pe: http://127.0.0.1:8000/people/ doar dupa ce se face rularea comenzilor de terminal.
