@@ -1,0 +1,88 @@
+{% extends 'simulator/base.html' %}
+
+{% block title %}All Fighters{% endblock %}
+
+{% block extra_style %}
+    .fighter-card { background: #1c1f24; border: 1px solid #2d323b; border-radius: 8px; padding: .85rem 1rem;
+                    margin-bottom: .75rem; display: flex; align-items: center; justify-content: space-between;
+                    cursor: pointer; transition: border-color .15s ease; }
+    .fighter-card:hover { border-color: #58a6ff; }
+    .fighter-left { display: flex; align-items: center; gap: .9rem; }
+    .avatar { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #2d323b; flex-shrink: 0; }
+    .card-actions { display: flex; align-items: center; gap: .75rem; }
+    .select-label { display: flex; align-items: center; gap: .35rem; font-size: .9rem; background: #121417;
+                    padding: .4rem .65rem; border-radius: 5px; border: 1px solid #30363d; cursor: pointer; }
+{% endblock %}
+
+{% block content %}
+    <h1>Army Roster</h1>
+
+    {% if units %}
+        <form id="simulate-form" method="post" action="{% url 'fight_simulate' %}">
+            {% csrf_token %}
+
+            {% for unit in units %}
+                <div class="fighter-card" onclick="window.location.href='{% url 'unit_detail' unit.id %}'">
+                    <div class="fighter-left">
+                        {% if unit.profile_image_link %}
+                            <img class="avatar" src="{{ unit.profile_image_link }}" alt="{{ unit.name }}"
+                                 width="50" height="50" onerror="this.style.visibility='hidden'">
+                        {% else %}
+                            <div class="avatar"></div>
+                        {% endif %}
+                        <div>
+                            <div>
+                                <strong>{{ unit.name }}</strong> — {{ unit.type }}
+                                <span class="badge badge-{{ unit.team }}">{{ unit.team }}</span>
+                            </div>
+                            <small class="muted">HP: {{ unit.health }}/{{ unit.MAX_HEALTH }} | ATK: {{ unit.attack_points }}</small>
+                        </div>
+                    </div>
+
+                    <div class="card-actions" onclick="event.stopPropagation();">
+                        {% if unit.is_injured %}
+                            <button type="submit" form="heal-form-{{ unit.id }}" class="btn btn-green">Heal</button>
+                        {% endif %}
+                        <label class="select-label">
+                            <input type="checkbox" name="selected_units" value="{{ unit.id }}"> Select
+                        </label>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-red" style="font-size:1rem;padding:.65rem 1.4rem;">Simulate</button>
+        </form>
+
+        {# formulare separate pentru Heal, ca să nu fie imbricate în formularul de Simulate #}
+        {% for unit in units %}
+            {% if unit.is_injured %}
+                <form id="heal-form-{{ unit.id }}" method="post" action="{% url 'unit_heal' unit.id %}" hidden>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="unit_list">
+                </form>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>No fighters in the army yet. <a class="btn-link" href="{% url 'unit_create' %}">Create one now</a>.</p>
+    {% endif %}
+
+    {# Easy 4b: statistici pe echipe, din toate istoricele de luptă #}
+    <div class="box" style="margin-top:2.5rem;">
+        <h2 style="margin-top:0;">Team Battle Statistics</h2>
+        <table>
+            <thead>
+                <tr><th>Team</th><th>Number of fights</th><th>Overall damage caused</th><th>Overall damage taken</th></tr>
+            </thead>
+            <tbody>
+                {% for stat in team_stats %}
+                    <tr>
+                        <td><span class="badge badge-{{ stat.team }}" style="margin:0;">{{ stat.team }}</span></td>
+                        <td>{{ stat.fights_count }}</td>
+                        <td>{{ stat.damage_caused }}</td>
+                        <td>{{ stat.damage_taken }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

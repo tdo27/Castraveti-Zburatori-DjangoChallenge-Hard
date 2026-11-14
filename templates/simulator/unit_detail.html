@@ -1,0 +1,79 @@
+{% extends 'simulator/base.html' %}
+
+{% block title %}{{ unit.name }} — Fighter Details{% endblock %}
+
+{% block extra_style %}
+    .detail-card { display: flex; gap: 1.5rem; align-items: center; }
+    .detail-avatar { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; background: #2d323b; flex-shrink: 0; }
+    .detail-card p { margin: .25rem 0; }
+    .fight-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+                    border-bottom: 1px solid #2d323b; padding-bottom: .65rem; margin-bottom: .75rem; }
+    .winner-pill { background: #193b2d; border: 1px solid #2ea043; color: #7ee787; padding: .25rem .65rem;
+                   border-radius: 999px; font-size: .85rem; font-weight: 700; white-space: nowrap; }
+    .step-list { list-style: none; padding: 0; margin: 0; font-size: .92rem; }
+    .step-list li { padding: .35rem 0; border-bottom: 1px dashed #262b33; }
+    .step-list li:last-child { border-bottom: none; }
+{% endblock %}
+
+{% block content %}
+    <a class="btn-link" href="{% url 'unit_list' %}">&larr; Back to all fighters</a>
+
+    <div class="box detail-card" style="margin-top:1rem;">
+        {% if unit.profile_image_link %}
+            <img class="detail-avatar" src="{{ unit.profile_image_link }}" alt="{{ unit.name }}"
+                 onerror="this.style.visibility='hidden'">
+        {% else %}
+            <div class="detail-avatar"></div>
+        {% endif %}
+        <div>
+            <h1 style="margin:0 0 .5rem;">{{ unit.name }}</h1>
+            <p><strong>Type:</strong> {{ unit.type }}</p>
+            <p><strong>Team:</strong> <span class="badge badge-{{ unit.team }}" style="margin:0;">{{ unit.team }}</span></p>
+            <p><strong>Health:</strong> {{ unit.health }} / {{ unit.MAX_HEALTH }}</p>
+            <p><strong>AttackPoints:</strong> {{ unit.attack_points }}</p>
+            {% if unit.profile_image_link %}
+                <p style="word-break:break-all;"><strong>ProfileImageLink:</strong>
+                    <a class="btn-link" href="{{ unit.profile_image_link }}" target="_blank" rel="noopener">{{ unit.profile_image_link }}</a>
+                </p>
+            {% endif %}
+            {% if unit.is_injured %}
+                <form method="post" action="{% url 'unit_heal' unit.id %}" style="margin-top:.5rem;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="unit_detail">
+                    <button type="submit" class="btn btn-green">Heal</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Easy 4a: câte un card pentru fiecare luptă, cu istoricul complet și câștigătorul #}
+    <h2 style="margin-top:2rem;">Fight History ({{ fights|length }})</h2>
+
+    {% for fight in fights %}
+        <div class="box">
+            <div class="fight-header">
+                <div>
+                    <strong>Fight #{{ fight.id }}:</strong>
+                    {{ fight.fighter1.name }} ({{ fight.fighter1.team }}) vs
+                    {{ fight.fighter2.name }} ({{ fight.fighter2.team }})
+                </div>
+                <span class="winner-pill">
+                    Winner: {% if fight.winner %}{{ fight.winner.name }} ({{ fight.winner.team }}){% else %}—{% endif %}
+                </span>
+            </div>
+            <ul class="step-list">
+                {% for step in fight.steps.all %}
+                    <li>
+                        <strong>Step {{ step.step_number }}:</strong>
+                        {{ step.attacker.name }} attacked {{ step.defender.name }} for
+                        <strong>{{ step.attack_points }}</strong> damage —
+                        {{ step.attacker.name }}: {{ step.attacker_health }} HP,
+                        {{ step.defender.name }}: {{ step.defender_health }} HP
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% empty %}
+        <p class="muted">This fighter has not participated in any fights yet.</p>
+    {% endfor %}
+{% endblock %}

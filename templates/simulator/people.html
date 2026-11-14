@@ -1,0 +1,59 @@
+{% extends 'simulator/base.html' %}
+
+{% block title %}Draft Office{% endblock %}
+
+{% block extra_style %}
+    .actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+    .stats { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .stats b { font-size: 1.4rem; }
+    pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
+{% endblock %}
+
+{% block content %}
+    <h1>Draft Office</h1>
+    <p class="muted">
+        Registration and drafting run as Celery background tasks.
+        Keep the worker running and refresh this page to follow the progress.
+    </p>
+
+    <div class="box">
+        <form method="post" class="actions">
+            {% csrf_token %}
+            <button class="btn btn-green" name="action" value="register">1. Register people</button>
+            <button class="btn btn-red" name="action" value="draft">2. Start draft</button>
+            <button class="btn btn-grey" type="button" onclick="location.reload()">Refresh</button>
+        </form>
+    </div>
+
+    <div class="box stats">
+        <div>Registered<br><b>{{ total }}</b></div>
+        <div>Ranked<br><b>{{ ranked }} / {{ total }}</b></div>
+        {% for r in rank_counts %}<div>{{ r.rank }}<br><b>{{ r.n }}</b></div>{% endfor %}
+    </div>
+
+    {% for instruction in instructions %}
+        <div class="box">
+            <h3 style="margin-top:0;">Instructions from /{{ instruction.key }}</h3>
+            <pre>{% if instruction.content.message %}{{ instruction.content.message }}{% else %}{{ instruction.content|pprint }}{% endif %}</pre>
+        </div>
+    {% endfor %}
+
+    {% if people %}
+        <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Age</th><th>Rank</th><th>Other</th></tr></thead>
+            <tbody>
+                {% for p in people %}
+                    <tr>
+                        <td>{{ p.external_id }}</td>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.age }}</td>
+                        <td>{{ p.rank|default:"—" }}</td>
+                        <td class="muted">{% for k, v in p.extra.items %}{{ k }}: {{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">Nobody registered yet. Press <strong>Register people</strong>.</p>
+    {% endif %}
+{% endblock %}
